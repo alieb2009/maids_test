@@ -13,31 +13,47 @@ class TaskListScreen extends StatefulWidget {
 
 class _TaskListScreenState extends State<TaskListScreen> {
   final ScrollController _scrollController = ScrollController();
+  late int _tasksPerPage;
 
   @override
   void initState() {
     super.initState();
-    Provider.of<TaskProvider>(context, listen: false).fetchTasks().catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading tasks: $error')),
-      );
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _tasksPerPage = _calculateTasksPerPage(context);
+      Provider.of<TaskProvider>(context, listen: false).fetchTasks(limit: _tasksPerPage).catchError((error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading tasks: $error')),
+        );
+      });
 
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent) {
-        Provider.of<TaskProvider>(context, listen: false).fetchTasks(loadMore: true).catchError((error) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error loading more tasks: $error')),
-          );
-        });
-      }
+      _scrollController.addListener(() {
+        if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent) {
+          _loadMoreTasks();
+        }
+      });
     });
+  }
+
+  int _calculateTasksPerPage(BuildContext context) {
+    final height = MediaQuery.of(context).size.height;
+    const taskItemHeight = 70.0; // Approximate height of each ListTile
+    return (height / taskItemHeight).ceil();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadMoreTasks() async {
+    try {
+      await Provider.of<TaskProvider>(context, listen: false).fetchTasks(loadMore: true, limit: _tasksPerPage);
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading more tasks: $error')),
+      );
+    }
   }
 
   @override

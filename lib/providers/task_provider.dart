@@ -17,7 +17,7 @@ class TaskProvider with ChangeNotifier {
     loadTasksFromLocalStorage();
   }
 
-  Future<void> fetchTasks({bool loadMore = false}) async {
+  Future<void> fetchTasks({bool loadMore = false, required int limit}) async {
     if (_isLoading) return;
     _isLoading = true;
     notifyListeners();
@@ -27,7 +27,7 @@ class TaskProvider with ChangeNotifier {
         _tasks = [];
         _currentPage = 0;
       }
-      final response = await http.get(Uri.parse('https://dummyjson.com/todos?skip=${_currentPage * 30}&limit=30'));
+      final response = await http.get(Uri.parse('https://dummyjson.com/todos?skip=${_currentPage * (limit+1)}&limit=${limit+1}'));
       if (response.statusCode == 200) {
         Map<String, dynamic> data = json.decode(response.body);
         List<dynamic> tasksJson = data['todos'];
